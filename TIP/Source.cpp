@@ -565,3 +565,7 @@ void ThreatImageAugment::SaveIG(IG src, string filename) {
 
 	AugImgGT.close();
 }
+
+IG ThreatImageAugment::Reduce_boxsize(IG Threat) {
+	return Threat;
+}

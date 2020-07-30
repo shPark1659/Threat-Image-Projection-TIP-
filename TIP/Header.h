@@ -109,4 +109,5 @@ private:
 		void AddGT(IG* src, IG Threat, Point2f top_left);
 	IG InvNormalize(IG src);
 	void SaveIG(IG src, string filename);
+	IG Reduce_boxsize(IG Threat);
 };
