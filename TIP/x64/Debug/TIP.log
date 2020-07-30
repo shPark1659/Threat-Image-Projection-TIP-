@@ -1,0 +1,10 @@
+﻿  Source.cpp
+c:\users\parksanghyun\downloads\tip 9.27 소스코드\tip\source.cpp(270): warning C4244: '초기화 중': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\parksanghyun\downloads\tip 9.27 소스코드\tip\source.cpp(271): warning C4244: '초기화 중': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\parksanghyun\downloads\tip 9.27 소스코드\tip\source.cpp(330): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\parksanghyun\downloads\tip 9.27 소스코드\tip\source.cpp(337): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\parksanghyun\downloads\tip 9.27 소스코드\tip\source.cpp(307): warning C4101: 'colRotated' :참조되지 않은 지역 변수입니다.
+c:\users\parksanghyun\downloads\tip 9.27 소스코드\tip\source.cpp(307): warning C4101: 'rowRotated' :참조되지 않은 지역 변수입니다.
+c:\users\parksanghyun\downloads\tip 9.27 소스코드\tip\source.cpp(475): warning C4267: '인수': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  TIP.vcxproj -> C:\Users\ParkSanghyun\Downloads\TIP 9.27 소스코드\x64\Debug\TIP.exe
+  TIP.vcxproj -> C:\Users\ParkSanghyun\Downloads\TIP 9.27 소스코드\x64\Debug\TIP.pdb (Partial PDB)
