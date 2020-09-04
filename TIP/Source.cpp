@@ -21,11 +21,89 @@
 using namespace cv;
 using namespace std;
 
+///////////////////////////////////////////////////////
+void find_ROI(Mat src, int* array) {
+
+	Mat vector;
+	Mat thresholded;
+	src.copyTo(thresholded);
+
+	float *data_input = (float *)thresholded.data;
+	for (int c = 0; c < thresholded.cols; c++) {
+		for (int r = 0; r < thresholded.rows; r++) {
+			float k = data_input[r * thresholded.cols + c];
+			if (data_input[r * thresholded.cols + c] > 0.8) {
+				data_input[r * thresholded.cols + c] = 0.0;
+			}
+		}
+	}
+
+	reduce(thresholded, vector, 0, REDUCE_SUM);
+
+	int first = 0;
+	int last = vector.cols;
+
+	float *vector_input = (float *)vector.data;
+	for (int c = 0; c < vector.cols; c++) {
+		if (vector_input[c] != 0) {
+			first = c; break;
+		}
+	}
+	for (int c = vector.cols - 1; c >= 0; c--) {
+		if (vector_input[c] != 0) {
+			last = c; break;
+		}
+	} 
+
+	*array = first;
+	*(array + 1) = last;
+}
+
+Mat cut_margin(Mat src, int margin, int* crop=NULL) {
+	int first, last;
+
+	if (crop == NULL) {
+		int arr[2];
+		find_ROI(src, arr);
+		first = arr[0] - margin;
+		last = arr[1] + margin;
+	}
+	else {
+		first = crop[0] - margin;
+		last = crop[1] + margin;
+	}
+	if (first < 0)
+		first = 0;
+	if (last > src.cols)
+		last = src.cols;
+
+	Range col_range = Range(first, last);
+	Range row_range = Range(0, src.rows - 1);
+
+	Mat output = src(row_range, col_range);
+
+	return output;
+}
+
+bool cut_margin_realtime(void* arr, int length, int threshold) {
+	Mat vec(1, length, CV_16U, arr);
+
+	double min;
+
+	minMaxIdx(vec, &min, NULL);
+
+	if (min > threshold)
+		return true;
+	else
+		return false;
+}
+/////////////////////////////////////////////////////
 
 int main() {
 	
 	ThreatImageAugment New;
-	for (int n = 0; n < 10000; n++)
+	int start = 0;
+	for (int n = start; n < start+10000; n++)
 	{
 		int i = rand() % 11;
 		New._run(i, n);
@@ -36,11 +114,25 @@ int main() {
 }
 
 void ThreatImageAugment::_run(int Index_BG, int nRst) {
-
-	// IG BG = ReadImg("background_" + to_string(Index_BG), 0, READIMG_TXT_SEPERATE);
 	IG BG = ReadImg("background_" + to_string(Index_BG), 0, READIMG_PNG);
 	IG T, Result;
 	int Total = 0;
+	/////////////////////////////////////////////////////////////////////////////////
+	ushort test[5] = { 10000, 50000, 40000, 60000, 30000};
+
+	bool isreal = cut_margin_realtime(test, 5, 55000);
+
+	cout << isreal << endl;
+
+	/////////////////////////////////////////////////////////////////////////////////
+	Mat sample = BG.Img_low;
+	int arr[2];
+	find_ROI(sample, arr);
+	Mat output1 = cut_margin(sample,15);
+	Mat output2 = cut_margin(sample, 15, arr);
+	imwrite("output.png", output1*255);
+	printf("ok");
+	/////////////////////////////////////////////////////////////////////////////////
 
 	if (_mkdir(dst)) {
 		cout << "already exist dst folder!!" << endl;
@@ -50,8 +142,8 @@ void ThreatImageAugment::_run(int Index_BG, int nRst) {
 		for (int No = 0; No < ChoiceNo[classList]; No++) {
 			random_device rng;
 			int Index_C = rng() % No_per_Class[classList];
-			//T = ReadImg(Class[classList] + "_" + to_string(Index_C), classList, READIMG_TXT_UNITE);
 			T = ReadImg(Class[classList] + "_" + to_string(Index_C), classList, READIMG_PNG);
+
 			T = Vol_N_Den(T);
 			T = Rotation(T);
 
@@ -208,8 +300,8 @@ IG ThreatImageAugment::ReadImg(string filename, int classnum, int type) {
 	}
 
 	if (classnum) {
-		Lsrc = Saturation(Lsrc);
-		Hsrc = Saturation(Hsrc);
+		Lsrc = Saturation(Lsrc, threshold_value, maxVal);
+		Hsrc = Saturation(Hsrc, threshold_value, maxVal);
 	}
 	Lsrc = Norm(Lsrc);
 	Hsrc = Norm(Hsrc);
@@ -220,7 +312,7 @@ IG ThreatImageAugment::ReadImg(string filename, int classnum, int type) {
 }
 
 // 위험물 영상의 background를 max value로 saturation
-Mat ThreatImageAugment::Saturation(Mat src) {
+Mat ThreatImageAugment::Saturation(Mat src, int threshold, int value) {
 
 	Mat output;
 	src.copyTo(output);
@@ -228,8 +320,8 @@ Mat ThreatImageAugment::Saturation(Mat src) {
 	ushort *data_input = (ushort *)output.data;
 	for (int c = 0; c < output.cols; c++)
 		for (int r = 0; r < output.rows; r++)
-			if (data_input[r * output.cols + c] > threshold_value)
-				data_input[r * output.cols + c] = maxVal;
+			if (data_input[r * output.cols + c] > threshold)
+				data_input[r * output.cols + c] = value;
 
 	return output;
 }
@@ -566,6 +658,48 @@ void ThreatImageAugment::SaveIG(IG src, string filename) {
 	AugImgGT.close();
 }
 
-IG ThreatImageAugment::Reduce_boxsize(IG Threat) {
-	return Threat;
+IG ThreatImageAugment::Thinning(IG src) {
+
+	int row = src.Img_low.rows;
+	int col = src.Img_low.cols;
+	
+	/*IG output = src;
+	Mat thresholded = Saturation(src.Img_low, threshold_value, 0);
+
+	int r = 0;
+	int c = 0;
+
+
+
+	while (1) {
+		if 
+		r += 1;
+	}
+
+
+	int angle = RndAngle();
+
+	int dia = (int)sqrt(col * col + row * row);
+	int offsetX = (dia - col) / 2;
+	int offsetY = (dia - row) / 2;
+	int rowRotated, colRotated;
+
+	Mat targetMat_low(dia, dia, Threat.Img_low.type(), Scalar(1));
+	Mat targetMat_high(dia, dia, Threat.Img_high.type(), Scalar(1));
+	Point2f Threat_center(targetMat_low.cols / 2.0F, targetMat_low.rows / 2.0F);
+
+	Threat.Img_low.copyTo(targetMat_low.rowRange(offsetY, offsetY + Threat.Img_low.rows).colRange(offsetX, offsetX + Threat.Img_low.cols));
+	Threat.Img_high.copyTo(targetMat_high.rowRange(offsetY, offsetY + Threat.Img_high.rows).colRange(offsetX, offsetX + Threat.Img_high.cols));
+	Mat rot_mat = getRotationMatrix2D(Threat_center, angle, 1.0);
+	warpAffine(targetMat_low, RotatedTI_low, rot_mat, targetMat_low.size(), INTER_LINEAR, BORDER_CONSTANT, Scalar(1));
+	warpAffine(targetMat_high, RotatedTI_high, rot_mat, targetMat_high.size(), INTER_LINEAR, BORDER_CONSTANT, Scalar(1));
+
+	Rect bound_Rect(Threat.Img_low.cols, Threat.Img_low.rows, 0, 0);
+
+	Mat co_Ordinate = (Mat_<double>(3, 4) << offsetX, offsetX + Threat.Img_low.cols, offsetX, offsetX + Threat.Img_low.cols,
+		offsetY, offsetY, offsetY + Threat.Img_low.rows, offsetY + Threat.Img_low.rows,
+		1, 1, 1, 1);
+	Mat RotCo_Ordinate = rot_mat * co_Ordinate;*/
+	return src;
 }
+

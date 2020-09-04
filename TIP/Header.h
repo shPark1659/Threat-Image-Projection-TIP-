@@ -35,9 +35,10 @@ struct GT {
 	float y;
 	float width;
 	float height;
+	int angle;
 
 	bool operator==(const GT& a) const {
-		return(Nclass == a.Nclass && x == a.x && y == a.y && width == a.width && height == a.height);
+		return(Nclass == a.Nclass && x == a.x && y == a.y && width == a.width && height == a.height && angle == a.angle);
 	};
 
 	GT& operator=(const GT &a)
@@ -47,6 +48,7 @@ struct GT {
 		y = a.y;
 		width = a.width;
 		height = a.height;
+		angle = a.angle;
 		return *this;
 	};
 };
@@ -99,8 +101,9 @@ private:
 
 	IG ReadImg(string filename, int classnum, int type);
 		Mat Norm(Mat src);
-		Mat Saturation(Mat src); 
+		Mat Saturation(Mat src, int threshold, int value); 
 		IG MakeIG(Mat low, Mat high, int classnum);
+		IG Thinning(IG src);
 	IG Vol_N_Den(IG Threat);
 	IG Rotation(IG Threat);
 		int RndAngle();
@@ -109,5 +112,4 @@ private:
 		void AddGT(IG* src, IG Threat, Point2f top_left);
 	IG InvNormalize(IG src);
 	void SaveIG(IG src, string filename);
-	IG Reduce_boxsize(IG Threat);
 };
